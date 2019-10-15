@@ -215,9 +215,11 @@ uniquelist=false]{biblatex}
 	\block
 	[bodyverticalshift=0cm, bodyinnersep=6mm]{}{
 		\fontsize{32}{38.4}\selectfont
+		\setlength{\parindent}{48pt}
+		\noindent
 		Science networks carry \textbf{high-speed, critical traffic} from scientific instruments to researchers and laboratories. Instruments at CERN generate \textbf{petabytes of data per second}, which is actively distributed on a global compute and storage infrastructure. The majority of science flows use TCP, with countless variants of congestion control algorithms in use. \textbf{Measuring these flows is a balancing act}: traffic sampling is cheaper, yet packet-based processing is required for tasks such as microburst detection \cite{DBLP:conf/sigcomm/ChenFKRR18}. Collecting telemetry for every packet would improve existing measures and enable new analyses, but presents a difficult engineering challenge.
 		
-		We present a system to perform \textbf{per-packet, fine-grained monitoring}. We use \textbf{P4-programmable hardware} to implement a telemetry agent that converts packets into a digest with a \textbf{nanosecond-accurate timestamp}. Several of these switches are being deployed in our multi-100Gbit/s network. Digests are analysed by dedicated collector servers, \textbf{engineered to run at wire-rate}.
+		We present a system to perform \textbf{per-packet, fine-grained monitoring}. We use \textbf{P4 programmable hardware} to implement a telemetry agent that converts packets into a digest with a \textbf{nanosecond-accurate timestamp}. Several of these switches are being deployed in our multi-100Gbit/s network. Digests are analysed by dedicated collector servers, \textbf{engineered to run at wire-rate}.
 	}}
 	\block[bodywidthscale=0.999]{Architecture}{
 		\fontsize{32}{38.4}\selectfont
@@ -227,6 +229,8 @@ uniquelist=false]{biblatex}
 		\end{tikzfigure}
 	
 		Test text hello.
+		
+		?? What actual hardware? Agilio CXs
 	}
 	\column{0.33}
 	\block[bodywidthscale=0.9999]{Collectors}{
@@ -298,6 +302,10 @@ uniquelist=false]{biblatex}
 		And here's how fast it goes...
 		
 		?? Convert into actual useful numbers -- what is the peak between all flows? What is the peak per flow?
+		
+		?? Where do the numbers come from? Smaller-scale machine, so promising.
+		
+		?? Preliminary test with Rust suggest higher throughput.
 		
 	
 	\begin{tikztable}[Pipeline processing rates.\label{tab:rates}]
