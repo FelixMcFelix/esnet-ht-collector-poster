@@ -9,7 +9,7 @@
 \usepackage{wrapfig}
 %\usepackage{microtype}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta, calc, 3D, positioning}
+\usetikzlibrary{arrows.meta, calc, positioning}
 %%\usepackage{ifthen}
 %%\usepackage{tikz-3dplot}
 \usepackage{amssymb}
@@ -25,7 +25,12 @@
 \usepackage[sfdefault]{FiraSans}
 \usepackage{FiraMono}
 \renewcommand*\familydefault{\sfdefault}
+\usepackage{newtxsf}
 %\usepackage[T1]{fontenc}
+%\usepackage{fontspec}
+%\setmathrm{Fira Sans}
+%\setmathsf{Fira Sans}
+%\setmathtt{Fira Mono}
 %
 \usepackage{graphicx}
 \usepackage[export]{adjustbox}
@@ -153,6 +158,8 @@ uniquelist=false]{biblatex}
 \colorlet{uofghybrid}{uofgsandstone!70!uofgrust}
 
 \definecolor{lblblue}{RGB}{2, 46, 77}
+
+\colorlet{brighterred}{uofgpillarbox!80!uofgpumpkin}
 %
 %\hypersetup{
 %	colorlinks,
@@ -219,7 +226,7 @@ uniquelist=false]{biblatex}
 		\noindent
 		Science networks carry \textbf{high-speed, critical traffic} from scientific instruments to researchers and laboratories. Instruments at CERN generate \textbf{petabytes of data per second}, which is actively distributed on a global compute and storage infrastructure. The majority of science flows use TCP, with countless variants of congestion control algorithms in use. \textbf{Measuring these flows is a balancing act}: traffic sampling is cheaper, yet packet-based processing is required for tasks such as microburst detection \cite{DBLP:conf/sigcomm/ChenFKRR18}. Collecting telemetry for every packet would improve existing measures and enable new analyses, but presents a difficult engineering challenge.
 		
-		We present a system to perform \textbf{per-packet, fine-grained monitoring}. We use \textbf{P4 programmable hardware} to implement a telemetry agent that converts packets into a digest with a \textbf{nanosecond-accurate timestamp}. Several of these switches are being deployed in our multi-100Gbit/s network. Digests are analysed by dedicated collector servers, \textbf{engineered to run at wire-rate}.
+		We present a system to perform \textbf{per-packet, fine-grained monitoring}. We use \textbf{P4 programmable hardware} to implement a telemetry agent that converts packets into a digest with a \textbf{nanosecond-accurate timestamp}. Several of these switches are being deployed in our multi-\SI{100}{\giga\bit\per\second} network. Digests are analysed by dedicated collector servers, \textbf{engineered to run at wire-rate}.
 	}}
 	\block[bodywidthscale=0.999]{Architecture}{
 		\fontsize{32}{38.4}\selectfont
@@ -228,12 +235,41 @@ uniquelist=false]{biblatex}
 		\vspace{-5cm}
 		\end{tikzfigure}
 	
-		Test text hello.
+		?? Future network---\textbf{ESnet6}.
 		
+		?? Massive WAN. multi-\SI{100}{\giga\bit\per\second} at edge, to peers.
+		
+		?? Install something like \cref{fig:ht-arch} at every edge node, selectively mirror traffic.
+		
+		?? Why go with this model? Data reduction and timestamping at line-rate. Control plane lets us control where filtering applies, and which actions happen (which collectors). Custom deployable firmware lets us evolve our collectors, formats, applications, and \textbf{adapt}.
+
 		?? What actual hardware? Agilio CXs
 	}
+\block[bodywidthscale=0.9999]{Point Rates}{
+	\fontsize{32}{38.4}\selectfont
+	Being able to accurately time every packet...
+	\begin{tikzfigure}[Point rates. Note that $p_1$ and $p_2$ may be from different flows.\label{fig:pr}]
+		\resizebox{\linewidth}{!}{\fontsize{10}{12}\selectfont
+			\begin{tikzpicture}
+			[packet/.style={draw, fill=uofgsunshine}]
+			\node[packet] (p1) {$p_1$: 1500B};
+			\node[packet, right= 1cm of p1] (p2) {$p_2$: 800B};
+			
+			\node at ($(p1.south west) - (0,1)$) (t1) {$t_1$};
+			\node at ($(p2.south west) - (0,1)$) (t2) {$t_2$};
+			
+			\draw[-, dotted] (t1.north)--(p1.south west);
+			\draw[-, dotted] (t2.north)--(p2.south west);
+			
+			\draw[<->] (t1.north) -- node[below]{$dt$} (t2.north);
+			\draw[<->] ($(t1.north) + (0,0.2)$) -- node[above]{$s$} ($(t1.north) + (1.8,0.2)$);
+			\draw[<->] ($(t1.north) + (1.8,0.2)$) -- node[above]{$g$} ($(t2.north) + (0,0.2)$);
+			\end{tikzpicture} 
+		}
+	\end{tikzfigure}
+}
 	\column{0.33}
-	\block[bodywidthscale=0.9999]{Collectors}{
+	\block[bodywidthscale=0.9999]{Collectors---Stateful TCP Analysis}{
 %	\begin{wrapfigure}[6]{r}{.3\linewidth}
 		\fontsize{32}{38.4}\selectfont
 		\begin{tikzfigure}[Collector architecture.\label{fig:collector-arch}]
@@ -300,14 +336,6 @@ uniquelist=false]{biblatex}
 		\end{itemize}
 	
 		And here's how fast it goes...
-		
-		?? Convert into actual useful numbers -- what is the peak between all flows? What is the peak per flow?
-		
-		?? Where do the numbers come from? Smaller-scale machine, so promising.
-		
-		?? Preliminary test with Rust suggest higher throughput.
-		
-	
 	\begin{tikztable}[Pipeline processing rates.\label{tab:rates}]
 		\resizebox{\linewidth}{!}{\begin{tabular}{@{}ccccc@{}}
 				\toprule\multicolumn{1}{c}{Metric} & \multicolumn{1}{c}{Parse} & \multicolumn{1}{c}{Dispatch} & \multicolumn{1}{c}{Analysis} & \multicolumn{1}{c}{Serialisation} \\ \midrule
@@ -318,12 +346,60 @@ uniquelist=false]{biblatex}
 			\end{tabular}
 		}
 	\end{tikztable}
+		
+?? Convert into actual useful numbers -- what is the peak between all flows? What is the peak per flow?
+
+?? Where do the numbers come from? Smaller-scale machine, so promising.
+
+?? Preliminary test with Rust suggest higher throughput.
+
+?? Describe how collectors make data available?
 
 %	\alert{Does this work?}
 %	\end{wrapfigure}
 }
+	
+\block[bodywidthscale=0.9999]{Measuring At Midpoints}{
+	\fontsize{32}{38.4}\selectfont
+	\begin{tikzfigure}[SRTT computation of unidirectional flows as seen by collectors. Bytes carrying data are marked by a red arrow.\label{fig:srtt}]
+		\resizebox{0.9\linewidth}{!}{\fontsize{8}{9.6}\selectfont
+				\begin{tikzpicture}[seq/.style={draw=brighterred}, ack/.style={draw=uofgslate}]
+				\node[draw, circle] (acirc) {};
+				\node[above = 0.1cm of acirc] {$A$};
+				
+				\node[draw, circle, right of = acirc] (e1circ) {};
+				\node[above = 0.1cm of e1circ] {$E_1$};
+				
+				\node[right of = e1circ] (missingnet) {$\dots$};
+				
+				\node[draw, circle, right of = missingnet] (e2circ) {};
+				\node[above = 0.1cm of e2circ] {$E_2$};
+				
+				\node[draw, circle, right of = e2circ] (bcirc) {};
+				\node[above = 0.1cm of bcirc] {$B$};
+				
+				\draw[->, seq] ($(acirc.east) + (0.0,0.1)$) -- ($(e1circ.west) + (0.0,0.1)$);
+				\draw[<-, ack] ($(acirc.east) - (0.0,0.1)$) -- ($(e1circ.west) - (0.0,0.1)$);
+				
+				\draw[->, seq] ($(e1circ.east) + (0.0,0.1)$) -- ($(e2circ.west) + (0.0,0.1)$);
+				\draw[<-, ack] ($(e1circ.east) - (0.0,0.1)$) -- ($(e2circ.west) - (0.0,0.1)$);
+				
+				\draw[->, seq] ($(e2circ.east) + (0.0,0.1)$) -- ($(bcirc.west) + (0.0,0.1)$);
+				\draw[<-, ack] ($(e2circ.east) - (0.0,0.1)$) -- ($(bcirc.west) - (0.0,0.1)$);
+				
+				\draw[<->] ($(e1circ.south) - (0.0,0.1)$) -- node[below]{$SRTT_{E_1}$} ($(bcirc.south) - (0.0,0.1)$);
+				\draw[<->] ($(e2circ.south) - (0.0,0.3)$) -- node[below]{$SRTT_{E_2}$} ($(bcirc.south) - (0.0,0.3)$);
+				
+				\end{tikzpicture}
+			}
+	\end{tikzfigure}
+
+	?? Discuss how we can diagnose our own network and part of the recipient, process of elimination
+	
+	?? Same observations probnably apply to our BIF too.
+}
 	\column{0.33}
-	\block{Next Collectors}{
+	\block[bodywidthscale=0.9999]{Next Collectors}{
 		\fontsize{32}{38.4}\selectfont
 		Stateful TCP analysis of this kind acts as a pilot project for the feasibility of the system. We intend to explore other collector designs, including:
 		\begin{itemize}
@@ -344,7 +420,9 @@ uniquelist=false]{biblatex}
 	}
 	\block{Future Work}{
 		\fontsize{32}{38.4}\selectfont
-		Synchronisation?
+		\begin{itemize}
+			\item Correlating results between collectors (and switch-to-switch time synchronisation \cite{DBLP:conf/sosr/KannanJC19})
+		\end{itemize}
 	}
 	\block{References}{\printbibliography[heading=none]}
 \end{columns}
