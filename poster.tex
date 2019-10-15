@@ -26,6 +26,7 @@
 \usepackage{FiraMono}
 \renewcommand*\familydefault{\sfdefault}
 \usepackage{newtxsf}
+\renewcommand*\oldstylenums[1]{{\firaoldstyle #1}}
 %\usepackage[T1]{fontenc}
 %\usepackage{fontspec}
 %\setmathrm{Fira Sans}
@@ -62,6 +63,8 @@ uniquelist=false]{biblatex}
 \DefineBibliographyStrings{english}{%
 	andothers = {\emph{et al}\adddot}
 }
+\DeclareFieldFormat[article]{title}{\textbf{\emph{#1}}}
+\DeclareFieldFormat[inproceedings]{title}{\textbf{\emph{#1}}}
 \DeclareFieldFormat[inproceedings]{url}{}
 \DeclareFieldFormat[article]{url}{}
 \DeclareFieldFormat[inproceedings]{doi}{}
@@ -239,11 +242,15 @@ uniquelist=false]{biblatex}
 		
 		?? Massive WAN. multi-\SI{100}{\giga\bit\per\second} at edge, to peers.
 		
-		?? Install something like \cref{fig:ht-arch} at every edge node, selectively mirror traffic.
+		?? Install something like Fig. \ref{fig:ht-arch} at every edge node, selectively mirror traffic.
+		
+		?? P4 \cite{DBLP:journals/ccr/BosshartDGIMRSTVVW14}
 		
 		?? Why go with this model? Data reduction and timestamping at line-rate. Control plane lets us control where filtering applies, and which actions happen (which collectors). Custom deployable firmware lets us evolve our collectors, formats, applications, and \textbf{adapt}.
 
 		?? What actual hardware? Agilio CXs
+		
+		?? Describe how collectors make data available?
 	}
 \block[bodywidthscale=0.9999]{Point Rates}{
 	\fontsize{32}{38.4}\selectfont
@@ -272,6 +279,7 @@ uniquelist=false]{biblatex}
 	\block[bodywidthscale=0.9999]{Collectors---Stateful TCP Analysis}{
 %	\begin{wrapfigure}[6]{r}{.3\linewidth}
 		\fontsize{32}{38.4}\selectfont
+		\vspace{-1em}
 		\begin{tikzfigure}[Collector architecture.\label{fig:collector-arch}]
 		\resizebox{\linewidth}{!}{\fontsize{10}{12}\selectfont\begin{tikzpicture}
 		[stage/.style={draw, rounded rectangle, fill=uofgmocha, align=center},
@@ -324,9 +332,10 @@ uniquelist=false]{biblatex}
 		
 		\draw[-, dotted] ($(remotelabel) - (1,-0.5)$)--($(remotelabel) - (1,4.5)$);
 		\end{tikzpicture}}
+		\vspace{-2em}
 		\end{tikzfigure}
 
-		Collectors sure do work! Here are some of the algorithms we've implemented...
+		We've implemented a collector application to perform TCP flow analysis from High Touch packets, including the following algorithms:
 		\begin{itemize}
 			\item Rate Monitoring (point estimate and sliding window).
 			\item Packet loss and retransmission detection.
@@ -335,7 +344,7 @@ uniquelist=false]{biblatex}
 			\item Congestion window size estimation via \citeauthor{DBLP:conf/sosr/GhasemiBR17}'s algorithm \cite{DBLP:conf/sosr/GhasemiBR17}.
 		\end{itemize}
 	
-		And here's how fast it goes...
+		We use a pipelined design (Fig. \ref{fig:collector-arch}) to maximise throughput where possible.
 	\begin{tikztable}[Pipeline processing rates.\label{tab:rates}]
 		\resizebox{\linewidth}{!}{\begin{tabular}{@{}ccccc@{}}
 				\toprule\multicolumn{1}{c}{Metric} & \multicolumn{1}{c}{Parse} & \multicolumn{1}{c}{Dispatch} & \multicolumn{1}{c}{Analysis} & \multicolumn{1}{c}{Serialisation} \\ \midrule
@@ -346,14 +355,12 @@ uniquelist=false]{biblatex}
 			\end{tabular}
 		}
 	\end{tikztable}
-		
-?? Convert into actual useful numbers -- what is the peak between all flows? What is the peak per flow?
 
-?? Where do the numbers come from? Smaller-scale machine, so promising.
+	The ingress pipeline then has a peak capacity of \textbf{\SI{55.8}{\giga\bit\per\second} between all flows}, and \textbf{\SIrange{22.3}{34.9}{\giga\bit\per\second} per-flow} (depending on which analyses are performed).
+
+	?? Where do the numbers come from? Smaller-scale machine, so promising.
 
 ?? Preliminary test with Rust suggest higher throughput.
-
-?? Describe how collectors make data available?
 
 %	\alert{Does this work?}
 %	\end{wrapfigure}
@@ -362,7 +369,7 @@ uniquelist=false]{biblatex}
 \block[bodywidthscale=0.9999]{Measuring At Midpoints}{
 	\fontsize{32}{38.4}\selectfont
 	\begin{tikzfigure}[SRTT computation of unidirectional flows as seen by collectors. Bytes carrying data are marked by a red arrow.\label{fig:srtt}]
-		\resizebox{0.9\linewidth}{!}{\fontsize{8}{9.6}\selectfont
+		\resizebox{0.8\linewidth}{!}{\fontsize{8}{9.6}\selectfont
 				\begin{tikzpicture}[seq/.style={draw=brighterred}, ack/.style={draw=uofgslate}]
 				\node[draw, circle] (acirc) {};
 				\node[above = 0.1cm of acirc] {$A$};
@@ -408,7 +415,14 @@ uniquelist=false]{biblatex}
 			\item Visualisation/measurement of queueing.
 		\end{itemize}
 	}
-	\block{Datasets}{
+	\block[bodywidthscale=0.9999]{TCP Flavour Identification}{
+		\begin{tikzfigure}[Accuracy in telling apart TCP Cubic and BBR flows.\label{fig:lstm}]
+			\adjincludegraphics[width=0.8\linewidth]{cubic-vs-bbr-accuracy-poster}
+		\end{tikzfigure}
+	Motivated by the differences in point rate distribution between flows, we have have begun preliminary testing of TCP flavour identification using \textbf{long short-term memory} (LSTM) networks \cite{DBLP:journals/neco/HochreiterS97}, which are well suited to time-series classification.
+	We currently see \textbf{\SI{98.9}{\percent} prediction accuracy in as few as 20 measurements} for unmultiplexed flows.
+	}
+	\block[bodywidthscale=0.9999]{Datasets}{
 		\fontsize{32}{38.4}\selectfont
 		We provide data about some things...
 		\begin{itemize}
@@ -418,13 +432,15 @@ uniquelist=false]{biblatex}
 		\end{itemize}
 		We've made this available at: \\ \textbf{\url{https://bit.ly/esnet-ht-data}}.
 	}
-	\block{Future Work}{
+	\block[bodywidthscale=0.9999]{Future Work}{
 		\fontsize{32}{38.4}\selectfont
 		\begin{itemize}
-			\item Correlating results between collectors (and switch-to-switch time synchronisation \cite{DBLP:conf/sosr/KannanJC19})
+			\item Correlating results between collectors (and switch-to-switch time synchronisation \cite{DBLP:conf/sosr/KannanJC19}).
+			\item Move control of which analyses are performed to the control plane.
+			\item Investigate analysis \emph{on} SmartNICs.
 		\end{itemize}
 	}
-	\block{References}{\printbibliography[heading=none]}
+	\block{References}{\renewcommand*{\bibfont}{\footnotesize}\selectfont\printbibliography[heading=none]}
 \end{columns}
 \end{document}
 %\maketitle
