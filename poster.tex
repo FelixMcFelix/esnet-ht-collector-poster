@@ -238,25 +238,19 @@ uniquelist=false]{biblatex}
 		\vspace{-5cm}
 		\end{tikzfigure}
 	
-		?? Future network---\textbf{ESnet6}.
+%		?? Massive WAN. multi-\SI{100}{\giga\bit\per\second} at edge, to peers.
+	
+		To better monitor flows in the next iteration of our large science network---\textbf{ESnet6}---we move flow analysis \textbf{to the network edge} (Fig. \ref{fig:ht-arch}).
+		TCP packets are mirrored, converted to \textbf{digests with nanosecond timestamps at MAC ingress} by P4-compatible \cite{DBLP:journals/ccr/BosshartDGIMRSTVVW14} Agilio CX SmartNICs, and forwarded to collectors for processing.
+		Collectors make data available by \textbf{both a live WebSocket stream} for real-time use cases, and via \textbf{mid-term storage in a time series database} for second-stage collectors or visualisation.
 		
-		?? Massive WAN. multi-\SI{100}{\giga\bit\per\second} at edge, to peers.
-		
-		?? Install something like Fig. \ref{fig:ht-arch} at every edge node, selectively mirror traffic.
-		
-		?? P4 \cite{DBLP:journals/ccr/BosshartDGIMRSTVVW14}
-		
-		?? Why go with this model? Data reduction and timestamping at line-rate. Control plane lets us control where filtering applies, and which actions happen (which collectors). Custom deployable firmware lets us evolve our collectors, formats, applications, and \textbf{adapt}.
-
-		?? What actual hardware? Agilio CXs
-		
-		?? Describe how collectors make data available?
+		This model allows \textbf{data reduction, timestamping, and processing at line-rate}, while the control plane lets us determine where flow filtering applies, and which processing occurs.
+		Custom, easily deployable P4 firmware lets us \textbf{adapt} our collectors, formats, applications as the network evolves.
 	}
 \block[bodywidthscale=0.9999]{Point Rates}{
 	\fontsize{32}{38.4}\selectfont
-	Being able to accurately time every packet...
 	\begin{tikzfigure}[Point rates. Note that $p_1$ and $p_2$ may be from different flows.\label{fig:pr}]
-		\resizebox{\linewidth}{!}{\fontsize{10}{12}\selectfont
+		\resizebox{0.82\linewidth}{!}{\fontsize{10}{12}\selectfont
 			\begin{tikzpicture}
 			[packet/.style={draw, fill=uofgsunshine}]
 			\node[packet] (p1) {$p_1$: 1500B};
@@ -274,6 +268,9 @@ uniquelist=false]{biblatex}
 			\end{tikzpicture} 
 		}
 	\end{tikzfigure}
+	Accurately measuring the ingress time of every packet allows us to approximate the time each packet spends on the wire.
+	In turn, we can measure the \textbf{point rate} associated with each packet.
+	Taken individually, these are counter-intuitive, but can reveal \textbf{interesting distributional characteristics} in aggregate (Fig. \ref{fig:bbr-cubic-rates}).
 }
 	\column{0.33}
 	\block[bodywidthscale=0.9999]{Collectors---Stateful TCP Analysis}{
@@ -282,10 +279,10 @@ uniquelist=false]{biblatex}
 		\vspace{-1em}
 		\begin{tikzfigure}[Collector architecture.\label{fig:collector-arch}]
 		\resizebox{\linewidth}{!}{\fontsize{10}{12}\selectfont\begin{tikzpicture}
-		[stage/.style={draw, rounded rectangle, fill=uofgmocha, align=center},
+		[stage/.style={draw, rounded rectangle, fill=brighterred, align=center, text=white},
 		pipeline/.style={stage, fill=uofgrose},
 		ws/.style={stage, fill=uofgslate, text=white},
-		store/.style={stage, fill=uofgsunshine}]
+		store/.style={stage, fill=uofgsunshine, text=black}]
 		\node[draw, fill=white!90!uofgpumpkin, minimum width=10.5cm, minimum height=2.7cm] (collectorbox) at (4.6,0) {};
 		\node[below right, inner sep=2pt] at (collectorbox.north west) {Collector};
 		
@@ -335,7 +332,7 @@ uniquelist=false]{biblatex}
 		\vspace{-2em}
 		\end{tikzfigure}
 
-		We've implemented a collector application to perform TCP flow analysis from High Touch packets, including the following algorithms:
+		We implement a collector application in \textbf{Go} to perform TCP flow analysis from High Touch packets, including the following algorithms:
 		\begin{itemize}
 			\item Rate Monitoring (point estimate and sliding window).
 			\item Packet loss and retransmission detection.
@@ -344,7 +341,7 @@ uniquelist=false]{biblatex}
 			\item Congestion window size estimation via \citeauthor{DBLP:conf/sosr/GhasemiBR17}'s algorithm \cite{DBLP:conf/sosr/GhasemiBR17}.
 		\end{itemize}
 	
-		We use a pipelined design (Fig. \ref{fig:collector-arch}) to maximise throughput where possible.
+		We use a \textbf{pipelined design} (Fig. \ref{fig:collector-arch}) to maximise throughput where possible.
 	\begin{tikztable}[Pipeline processing rates.\label{tab:rates}]
 		\resizebox{\linewidth}{!}{\begin{tabular}{@{}ccccc@{}}
 				\toprule\multicolumn{1}{c}{Metric} & \multicolumn{1}{c}{Parse} & \multicolumn{1}{c}{Dispatch} & \multicolumn{1}{c}{Analysis} & \multicolumn{1}{c}{Serialisation} \\ \midrule
@@ -356,11 +353,7 @@ uniquelist=false]{biblatex}
 		}
 	\end{tikztable}
 
-	The ingress pipeline then has a peak capacity of \textbf{\SI{55.8}{\giga\bit\per\second} between all flows}, and \textbf{\SIrange{22.3}{34.9}{\giga\bit\per\second} per-flow} (depending on which analyses are performed).
-
-	?? Where do the numbers come from? Smaller-scale machine, so promising.
-
-?? Preliminary test with Rust suggest higher throughput.
+	The ingress pipeline then has a peak capacity of \textbf{\SI{55.8}{\giga\bit\per\second} between all flows}, and \textbf{\SIrange{22.3}{34.9}{\giga\bit\per\second} per flow} (depending on which analyses are performed). Deployment machines will be considerably more powerful, and experiments in \emph{Rust} suggest higher parsing throughout.
 
 %	\alert{Does this work?}
 %	\end{wrapfigure}
@@ -368,8 +361,8 @@ uniquelist=false]{biblatex}
 	
 \block[bodywidthscale=0.9999]{Measuring At Midpoints}{
 	\fontsize{32}{38.4}\selectfont
-	\begin{tikzfigure}[SRTT computation of unidirectional flows as seen by collectors. Bytes carrying data are marked by a red arrow.\label{fig:srtt}]
-		\resizebox{0.8\linewidth}{!}{\fontsize{8}{9.6}\selectfont
+	\begin{tikzfigure}[SRTT computation of unidirectional flows as seen by collectors. Packets carrying data are marked by a red arrow.\label{fig:srtt}]
+		\resizebox{0.7\linewidth}{!}{\fontsize{8}{9.6}\selectfont
 				\begin{tikzpicture}[seq/.style={draw=brighterred}, ack/.style={draw=uofgslate}]
 				\node[draw, circle] (acirc) {};
 				\node[above = 0.1cm of acirc] {$A$};
@@ -394,50 +387,60 @@ uniquelist=false]{biblatex}
 				\draw[->, seq] ($(e2circ.east) + (0.0,0.1)$) -- ($(bcirc.west) + (0.0,0.1)$);
 				\draw[<-, ack] ($(e2circ.east) - (0.0,0.1)$) -- ($(bcirc.west) - (0.0,0.1)$);
 				
-				\draw[<->] ($(e1circ.south) - (0.0,0.1)$) -- node[below]{$SRTT_{E_1}$} ($(bcirc.south) - (0.0,0.1)$);
-				\draw[<->] ($(e2circ.south) - (0.0,0.3)$) -- node[below]{$SRTT_{E_2}$} ($(bcirc.south) - (0.0,0.3)$);
+				\draw[<->] ($(e1circ.south) - (0.0,0.2)$) -- node[below]{$SRTT_{E_1}$} ($(bcirc.south) - (0.0,0.2)$);
+				\draw[<->] ($(e2circ.south) - (0.0,0.6)$) -- node[below]{$SRTT_{E_2}$} ($(bcirc.south) - (0.0,0.6)$);
 				
 				\end{tikzpicture}
 			}
+		\vspace{-1em}
 	\end{tikzfigure}
 
-	?? Discuss how we can diagnose our own network and part of the recipient, process of elimination
-	
-	?? Same observations probnably apply to our BIF too.
+%	?? Discuss how we can diagnose our own network and part of the recipient, process of elimination
+	Given that many flows are effectively unidirectional in byte volume, TCP analysis performed between endpoints means that \textbf{certain metrics describe a portion of the path} (SRTT, bytes in flight).
+	Gathering these metrics at \textbf{both WAN ingress/egress} may be useful for diagnosing anomalous path behaviour.
 }
+	\block[bodywidthscale=0.9999]{TCP Flavour Rate Distribution}{
+		\fontsize{32}{38.4}\selectfont
+		\begin{tikzfigure}[Point (blue) and sliding window (red) rates at \SI{1}{\giga\bit\per\second}. TCP Cubic is on the left, BBR is on the right.\label{fig:bbr-cubic-rates}]
+		\resizebox{0.49\linewidth}{!}{
+			\includegraphics{cubic-point-rates}
+		}
+		\resizebox{0.49\linewidth}{!}{
+			\includegraphics{bbr-point-rates}
+		}
+		\end{tikzfigure}
+		Distributions of point rates over time vary for different flows---\textbf{suggesting e.g., different congestion control algorithm behaviour}.
+		Close inspection reveals that \textbf{BBR point rates have more structured distribution}.
+	}
 	\column{0.33}
 	\block[bodywidthscale=0.9999]{Next Collectors}{
 		\fontsize{32}{38.4}\selectfont
-		Stateful TCP analysis of this kind acts as a pilot project for the feasibility of the system. We intend to explore other collector designs, including:
+		Stateful TCP analysis of this kind acts as a \textbf{pilot project} for the feasibility of the system. We intend to explore other collector designs, including:
 		\begin{itemize}
-			\item Peak utilisation tracking (i.e., at \SI{1}{\second} granularity).
-			\item Monitoring microbursts in the network via timing information.
-			\item Visualisation/measurement of queueing.
+			\item \textbf{Peak utilisation tracking} (i.e., at \SI{1}{\second} granularity).
+			\item \textbf{Monitoring microbursts} in the network via timing information.
+			\item Visualisation/measurement of \textbf{queueing}.
 		\end{itemize}
 	}
 	\block[bodywidthscale=0.9999]{TCP Flavour Identification}{
 		\begin{tikzfigure}[Accuracy in telling apart TCP Cubic and BBR flows.\label{fig:lstm}]
-			\adjincludegraphics[width=0.8\linewidth]{cubic-vs-bbr-accuracy-poster}
+			\adjincludegraphics[width=0.94\linewidth]{cubic-vs-bbr-accuracy-poster}
 		\end{tikzfigure}
 	Motivated by the differences in point rate distribution between flows, we have have begun preliminary testing of TCP flavour identification using \textbf{long short-term memory} (LSTM) networks \cite{DBLP:journals/neco/HochreiterS97}, which are well suited to time-series classification.
 	We currently see \textbf{\SI{98.9}{\percent} prediction accuracy in as few as 20 measurements} for unmultiplexed flows.
 	}
 	\block[bodywidthscale=0.9999]{Datasets}{
 		\fontsize{32}{38.4}\selectfont
-		We provide data about some things...
-		\begin{itemize}
-			\item A
-			\item B
-			\item C
-		\end{itemize}
-		We've made this available at: \\ \textbf{\url{https://bit.ly/esnet-ht-data}}.
+		We provide telemetry packet captures and collector output for solo and pairs of multiplexed flows for $\left\{100,200,\ldots,1000\right\}$\si{\mega\bit\per\second}, using TCP \emph{Cubic}, \emph{BBR}, \emph{Reno} and \emph{Vegas} in \emph{iperf3}.
+		This is available at: \\ \textbf{\url{https://tinyurl.com/esnet-ht-data}}.
 	}
 	\block[bodywidthscale=0.9999]{Future Work}{
 		\fontsize{32}{38.4}\selectfont
 		\begin{itemize}
-			\item Correlating results between collectors (and switch-to-switch time synchronisation \cite{DBLP:conf/sosr/KannanJC19}).
-			\item Move control of which analyses are performed to the control plane.
-			\item Investigate analysis \emph{on} SmartNICs.
+			\item \textbf{Correlating results between collectors} (and switch-to-switch time synchronisation \cite{DBLP:conf/sosr/KannanJC19}).
+			\item Move control of \textbf{which analyses are performed} to the control plane.
+			\item Investigate \textbf{analysis \emph{on} SmartNICs}.
+			\item Handling \textbf{asymmetric flows}.
 		\end{itemize}
 	}
 	\block{References}{\renewcommand*{\bibfont}{\footnotesize}\selectfont\printbibliography[heading=none]}
