@@ -336,7 +336,7 @@ uniquelist=false]{biblatex}
 		\begin{itemize}
 			\item Rate Monitoring (point estimate and sliding window).
 			\item Packet loss and retransmission detection.
-			\item Online SRTT estimation via Karn's algorithm \cite{DBLP:journals/ccr/KarnP87}.
+			\item Online SRTT via Karn's algorithm \cite{DBLP:journals/ccr/KarnP87}.
 			\item Bytes-in-flight tracking.
 			\item Congestion window size estimation via \citeauthor{DBLP:conf/sosr/GhasemiBR17}'s algorithm \cite{DBLP:conf/sosr/GhasemiBR17}.
 		\end{itemize}
@@ -353,7 +353,8 @@ uniquelist=false]{biblatex}
 		}
 	\end{tikztable}
 
-	The ingress pipeline then has a peak capacity of \textbf{\SI{55.8}{\giga\bit\per\second} between all flows}, and \textbf{\SIrange{22.3}{34.9}{\giga\bit\per\second} per flow} (depending on which analyses are performed). Deployment machines will be considerably more powerful, and experiments in \emph{Rust} suggest higher parsing throughout.
+	We instrument each stage using \textbf{Prometheus}; the ingress pipeline then has a peak capacity of \textbf{\SI{55.8}{\giga\bit\per\second} between all flows}, and \textbf{\SIrange{22.3}{34.9}{\giga\bit\per\second} per flow} (depending on which analyses are performed).
+	Deployment machines will be considerably more powerful, and experiments in \emph{Rust} suggest higher parsing throughout.
 
 %	\alert{Does this work?}
 %	\end{wrapfigure}
